@@ -5,12 +5,21 @@ export class TokenBucket extends RateLimiter {
   constructor({
     timeWindow,
     maxRequestsPerTimeWindow,
-    maxRequestsPerMonth,
+    maxRequestsPerUserPerMonth,
     maxRequestsAcrossSystem,
     message,
     storage,
+    keyGenerator,
   }: RateLimiterConfigOptions) {
-    super();
+    super({
+      timeWindow,
+      maxRequestsPerTimeWindow,
+      maxRequestsPerUserPerMonth,
+      maxRequestsAcrossSystem,
+      message,
+      storage,
+      keyGenerator,
+    });
 
     this.message = message ? message : 'Too Many Requests';
     if (typeof timeWindow === 'string') {
@@ -36,11 +45,11 @@ export class TokenBucket extends RateLimiter {
     }
 
     this.strategy = new TokenBucketStrategy(
-      maxRequestsPerTimeWindow,
-      timeWindow, // No need for the + operator here
-      storage,
-      maxRequestsAcrossSystem,
-      maxRequestsPerMonth,
+      this.config.maxRequestsPerTimeWindow,
+      this.config.timeWindow as number,
+      this.config.storage,
+      this.config.maxRequestsPerUserPerMonth,
+      this.config.maxRequestsAcrossSystem,
     );
   }
 }

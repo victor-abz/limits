@@ -1,4 +1,3 @@
-// RateLimiter.ts
 import crypto from 'crypto';
 import { NextFunction, Request, Response } from 'express';
 import { StorageOptions } from './Storage/types/storage-options.types';
@@ -6,43 +5,50 @@ import { StorageOptions } from './Storage/types/storage-options.types';
 export type RateLimiterConfigOptions = {
   timeWindow: number | 'second' | 'sec' | 'minute' | 'min' | 'hour' | 'hr' | 'day';
   maxRequestsPerTimeWindow: number;
-  maxRequestsPerMonth: number;
+  maxRequestsPerUserPerMonth: number;
   maxRequestsAcrossSystem: number;
   message?: string;
   storage: StorageOptions;
+  keyGenerator?: (req: Request, res: Response) => string;
 };
 
 export interface RateLimiterStrategy {
-  refillToken(ip: string): Promise<void>;
-  consumeToken(ip: string): Promise<boolean>;
+  refillToken(identifier: string): Promise<void>;
+  consumeToken(identifier: string): Promise<boolean>;
 }
 
 export class RateLimiter {
   protected strategy: RateLimiterStrategy;
   protected message = 'Too Many Requests';
   protected hashAlgorithm = 'sha256';
+  protected config: RateLimiterConfigOptions;
 
-  private hashIpAddress(ipAddress: string): string {
+  constructor(config: RateLimiterConfigOptions) {
+    this.config = config;
+  }
+
+  private hashIdentifier(identifier: string): string {
     const hash = crypto.createHash(this.hashAlgorithm);
-    hash.update(ipAddress);
+    hash.update(identifier);
     return hash.digest('hex');
   }
 
-  async refillToken(ip: string): Promise<void> {
-    return this.strategy.refillToken(ip);
+  async refillToken(identifier: string): Promise<void> {
+    return this.strategy.refillToken(identifier);
   }
 
-  async consumeToken(ip: string): Promise<boolean> {
-    return this.strategy.consumeToken(ip);
+  async consumeToken(identifier: string): Promise<boolean> {
+    return this.strategy.consumeToken(identifier);
   }
 
   async middleware(req: Request, res: Response, next: NextFunction) {
-    const ipAddress = req.header('x-forwarded-for') || req.socket.remoteAddress;
-    const hashedIp = this.hashIpAddress(`${ipAddress}`);
+    const keyGenerator = this.config.keyGenerator || ((req) => req.ip);
+    const identifier = keyGenerator(req, res);
+    const hashedIdentifier = this.hashIdentifier(`${identifier}`);
 
-    await this.refillToken(`${hashedIp}`);
+    await this.refillToken(`${hashedIdentifier}`);
 
-    const consumeToken = await this.consumeToken(`${hashedIp}`);
+    const consumeToken = await this.consumeToken(`${hashedIdentifier}`);
 
     if (consumeToken === true) {
       next();

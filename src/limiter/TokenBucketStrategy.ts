@@ -13,13 +13,18 @@ export class TokenBucketStrategy {
     capacity: number,
     timeWindow: number,
     storage: StorageOptions,
+    private maxRequestsPerUserPerMonth: number,
     private maxRequestsAcrossSystem: number,
-    private maxRequestsPerMonth: number,
   ) {
     this.storage = new Storage(storage, timeWindow);
     this.capacity = capacity;
     this.timeWindow = timeWindow;
     this.lastRefillTime = Date.now();
+  }
+
+  private getCurrentMonthKey(): string {
+    const now = new Date();
+    return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
   }
 
   async refillToken(ip: string): Promise<void> {
@@ -43,7 +48,7 @@ export class TokenBucketStrategy {
       this.lastRefillTime = now;
     }
 
-    const monthlyKey = this.monthlyRequestKeyPrefix + new Date().toISOString().substr(0, 7);
+    const monthlyKey = this.monthlyRequestKeyPrefix + this.getCurrentMonthKey() + `_${ip}`;
     const monthlyRequests = ((await this.storage.get(monthlyKey)) as number) || 0;
     this.storage.set(monthlyKey, monthlyRequests + 1);
   }
@@ -55,10 +60,11 @@ export class TokenBucketStrategy {
       return false; // Hard throttling for the whole system
     }
 
-    const monthlyKey = this.monthlyRequestKeyPrefix + new Date().toISOString().substr(0, 7);
+    const monthlyKey = this.monthlyRequestKeyPrefix + this.getCurrentMonthKey() + `_${ip}`;
     const monthlyRequests = ((await this.storage.get(monthlyKey)) as number) || 0;
-    if (monthlyRequests >= this.maxRequestsPerMonth) {
-      return false; // Hard throttling for the month
+
+    if (monthlyRequests >= this.maxRequestsPerUserPerMonth) {
+      return false; // Hard throttling for the user per month
     }
 
     const ipExists = await this.storage.has(ip);

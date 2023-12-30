@@ -9,13 +9,16 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 // A global limit using the whole Express App
 const rateLimitConfig: RateLimiterConfigOptions = {
-  timeWindow: 'min', // or provide a specific time in milliseconds
-  maxRequestsPerTimeWindow: 3,
-  maxRequestsPerMonth: 1000,
-  maxRequestsAcrossSystem: 10000,
-  message: 'You have reached your limit, please access after period',
+  timeWindow: 8000, // or provide a specific time in milliseconds
+  maxRequestsPerTimeWindow: 1,
+  maxRequestsPerUserPerMonth: 2,
+  maxRequestsAcrossSystem: 10,
+  // message: 'You have reached your limit, please access after period',
   storage: {
     strategy: 'local', // Change to 'redis'for "distributed setup - a cluster of servers.
+  },
+  keyGenerator: (req: Request): string => {
+    return req.body.username; // can use any other available options
   },
 };
 
