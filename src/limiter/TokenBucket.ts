@@ -2,45 +2,29 @@ import { RateLimiter, RateLimiterConfigOptions } from './Limiter';
 import { TokenBucketStrategy } from './TokenBucketStrategy';
 
 export class TokenBucket extends RateLimiter {
-  constructor({
-    timeWindow,
-    maxRequestsPerTimeWindow,
-    maxRequestsPerUserPerMonth,
-    maxRequestsAcrossSystem,
-    message,
-    storage,
-    keyGenerator,
-  }: RateLimiterConfigOptions) {
-    super({
-      timeWindow,
-      maxRequestsPerTimeWindow,
-      maxRequestsPerUserPerMonth,
-      maxRequestsAcrossSystem,
-      message,
-      storage,
-      keyGenerator,
-    });
+  constructor(config: RateLimiterConfigOptions) {
+    super(config);
 
-    this.message = message ? message : 'Too Many Requests';
-    if (typeof timeWindow === 'string') {
-      switch (timeWindow) {
+    this.message = config.message || 'Too Many Requests';
+    if (typeof config.timeWindow === 'string') {
+      switch (config.timeWindow) {
         case 'sec':
         case 'second':
-          timeWindow = 1000;
+          config.timeWindow = 1000;
           break;
         case 'min':
         case 'minute':
-          timeWindow = 60 * 1000;
+          config.timeWindow = 60 * 1000;
           break;
         case 'hr':
         case 'hour':
-          timeWindow = 60 * 60 * 1000;
+          config.timeWindow = 60 * 60 * 1000;
           break;
         case 'day':
-          timeWindow = 24 * 60 * 60 * 1000;
+          config.timeWindow = 24 * 60 * 60 * 1000;
           break;
         default:
-          throw new Error('Invalid timeWindow: ' + timeWindow);
+          throw new Error('Invalid timeWindow: ' + config.timeWindow);
       }
     }
 

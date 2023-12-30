@@ -4,20 +4,20 @@ import { StorageOptions } from './Storage/types/storage-options.types';
 
 export class TokenBucketStrategy {
   private storage: StorageStrategy;
-  private capacity: number;
+  private maxRequestsPerTimeWindow: number;
   private timeWindow: number;
   private lastRefillTime: number;
   private monthlyRequestKeyPrefix = 'monthlyRequest_';
 
   constructor(
-    capacity: number,
+    maxRequestsPerTimeWindow: number,
     timeWindow: number,
     storage: StorageOptions,
     private maxRequestsPerUserPerMonth: number,
     private maxRequestsAcrossSystem: number,
   ) {
     this.storage = new Storage(storage, timeWindow);
-    this.capacity = capacity;
+    this.maxRequestsPerTimeWindow = maxRequestsPerTimeWindow;
     this.timeWindow = timeWindow;
     this.lastRefillTime = Date.now();
   }
@@ -27,60 +27,60 @@ export class TokenBucketStrategy {
     return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
   }
 
-  async refillToken(ip: string): Promise<void> {
+  async refillToken(userIdentifier: string): Promise<void> {
     const now = Date.now();
 
     const elapsedTime = now - this.lastRefillTime;
     const tokensToAdd = (elapsedTime / this.timeWindow) * 10;
 
-    const ipExists = await this.storage.has(ip);
+    const userIdentifierExists = await this.storage.has(userIdentifier);
     let newTokens: number;
 
-    if (ipExists) {
-      const currentTokens = ((await this.storage.get(ip)) as number) || 0;
-      newTokens = Math.min(+currentTokens + Math.floor(tokensToAdd), this.capacity);
+    if (userIdentifierExists) {
+      const currentTokens = ((await this.storage.get(userIdentifier)) as number) || 0;
+      newTokens = Math.min(+currentTokens + Math.floor(tokensToAdd), this.maxRequestsPerTimeWindow);
     } else {
-      newTokens = +this.capacity;
+      newTokens = +this.maxRequestsPerTimeWindow;
     }
 
-    if (newTokens === this.capacity) {
-      this.storage.set(ip, newTokens);
+    if (newTokens === this.maxRequestsPerTimeWindow) {
+      this.storage.set(userIdentifier, newTokens);
       this.lastRefillTime = now;
     }
 
-    const monthlyKey = this.monthlyRequestKeyPrefix + this.getCurrentMonthKey() + `_${ip}`;
+    const monthlyKey = this.monthlyRequestKeyPrefix + this.getCurrentMonthKey() + `_${userIdentifier}`;
     const monthlyRequests = ((await this.storage.get(monthlyKey)) as number) || 0;
     this.storage.set(monthlyKey, monthlyRequests + 1);
   }
 
-  async consumeToken(ip: string): Promise<boolean> {
+  async consumeToken(userIdentifier: string): Promise<boolean> {
     const systemKey = 'systemRequests';
     const systemRequests = ((await this.storage.get(systemKey)) as number) || 0;
     if (systemRequests >= this.maxRequestsAcrossSystem) {
       return false; // Hard throttling for the whole system
     }
 
-    const monthlyKey = this.monthlyRequestKeyPrefix + this.getCurrentMonthKey() + `_${ip}`;
+    const monthlyKey = this.monthlyRequestKeyPrefix + this.getCurrentMonthKey() + `_${userIdentifier}`;
     const monthlyRequests = ((await this.storage.get(monthlyKey)) as number) || 0;
 
     if (monthlyRequests >= this.maxRequestsPerUserPerMonth) {
       return false; // Hard throttling for the user per month
     }
 
-    const ipExists = await this.storage.has(ip);
+    const userIdentifierExists = await this.storage.has(userIdentifier);
     let currentTokens: number;
 
-    if (ipExists) {
-      currentTokens = (await this.storage.get(ip)) as number;
+    if (userIdentifierExists) {
+      currentTokens = (await this.storage.get(userIdentifier)) as number;
     } else {
-      currentTokens = this.capacity;
+      currentTokens = this.maxRequestsPerTimeWindow;
     }
 
     currentTokens = +currentTokens;
 
     if (currentTokens > 0) {
       this.storage.set(systemKey, systemRequests + 1);
-      this.storage.set(ip, currentTokens - 1);
+      this.storage.set(userIdentifier, currentTokens - 1);
       return true;
     } else {
       // TO-DO: Implement soft throttling for eligible customers
