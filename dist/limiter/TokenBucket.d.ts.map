@@ -1,0 +1,1 @@
+{"version":3,"file":"TokenBucket.d.ts","sourceRoot":"","sources":["../../src/limiter/TokenBucket.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,WAAW,EAAE,wBAAwB,EAAE,MAAM,WAAW,CAAC;AAGlE,qBAAa,WAAY,SAAQ,WAAW;gBAC9B,MAAM,EAAE,wBAAwB;CAgC7C"}
