@@ -18,8 +18,8 @@ const rateLimitConfig: RateLimiterConfigOptions = {
     // Implement your logic to get the rate limits from the configuration or any other source.
     return {
       identifier: req.body.username,
-      maxRequestsPerTimeWindow: 2,
-      maxRequestsPerUserPerMonth: 5,
+      maxRequestsPerTimeWindow: req.body.maxRequestsPerTimeWindow,
+      maxRequestsPerUserPerMonth: req.body.maxRequestsPerUserPerMonth,
     };
   },
   // message: 'You have reached your limit, please access after period',
