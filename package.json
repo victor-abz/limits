@@ -10,7 +10,9 @@
   },
   "scripts": {
     "dev": "ts-node-dev --respawn src/index.ts",
-    "build": "tsc",
+    "build": "rimraf dist && tsc",
+    "ts.check": "tsc --project tsconfig.json",
+    "add-build": "git add dist",
     "lint": "eslint src/**/*.ts",
     "format": "prettier --config .prettierrc 'src/**/*.ts' --write",
     "test": "jest --detectOpenHandles",
