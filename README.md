@@ -1,5 +1,16 @@
 # Rate Limiter Explainer
 
+## Remote Prototype:
+`POST https://limits.vercel.app/send-notification`
+
+```json
+{
+    "username": "user1",
+    "maxRequestsPerTimeWindow":3,
+    "maxRequestsPerUserPerMonth": 10
+}
+```
+
 ## Key Concepts
 
 1. **Token Bucket Algorithm:**

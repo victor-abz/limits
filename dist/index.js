@@ -41,9 +41,9 @@ const rateLimitConfig = {
     keyGenerator: async (req) => {
         // Implement your logic to get the rate limits from the configuration or any other source.
         return {
-            identifier: req.body.username,
-            maxRequestsPerTimeWindow: req.body.maxRequestsPerTimeWindow,
-            maxRequestsPerUserPerMonth: req.body.maxRequestsPerUserPerMonth,
+            identifier: req.body.username || 100,
+            maxRequestsPerTimeWindow: req.body.maxRequestsPerTimeWindow || 1000,
+            maxRequestsPerUserPerMonth: req.body.maxRequestsPerUserPerMonth || 1000,
         };
     },
     // message: 'You have reached your limit, please access after period',
