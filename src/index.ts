@@ -1,6 +1,9 @@
 import bodyParser from 'body-parser';
+import * as dotenv from 'dotenv';
 import express, { Application, Request, Response } from 'express';
-import { RateLimiterConfigOptions, TokenBucket } from './limiter';
+import { RateLimiterConfigOptions, TimeWindow, TokenBucket } from './limiter';
+
+dotenv.config();
 
 const app: Application = express();
 
@@ -9,8 +12,8 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 // A global limit using the whole Express App
 const rateLimitConfig: RateLimiterConfigOptions = {
-  timeWindow: 8000, // or provide a specific time in milliseconds
-  maxRequestsAcrossSystem: 10,
+  timeWindow: (process.env.TIME_WINDOW as number | TimeWindow) || 'sec', // or provide a specific time in milliseconds
+  maxRequestsAcrossSystem: (process.env.MAX_REQUESTS_ACROSS_SYSTEM as unknown as number) || 1000,
   keyGenerator: async (req: Request) => {
     // Implement your logic to get the rate limits from the configuration or any other source.
     return {

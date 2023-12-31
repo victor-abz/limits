@@ -7,9 +7,9 @@ export interface UserDetails {
   maxRequestsPerTimeWindow: number;
   maxRequestsPerUserPerMonth: number;
 }
-
+export type TimeWindow = 'second' | 'sec' | 'minute' | 'min' | 'hour' | 'hr' | 'day';
 export type RateLimiterConfigOptions = {
-  timeWindow: number | 'second' | 'sec' | 'minute' | 'min' | 'hour' | 'hr' | 'day';
+  timeWindow: number | TimeWindow;
   maxRequestsAcrossSystem: number;
   storage: StorageOptions;
   message?: string;
@@ -67,8 +67,8 @@ export class RateLimiter {
   private defaultKeyGenerator(req: Request): Promise<UserDetails> {
     const defaultUserDetails: UserDetails = {
       identifier: req.ip!,
-      maxRequestsPerTimeWindow: 10,
-      maxRequestsPerUserPerMonth: 100,
+      maxRequestsPerTimeWindow: (process.env.DEF_MAX_REQ_PER_USER_TIMEWINDOW as unknown as number) || 10,
+      maxRequestsPerUserPerMonth: (process.env.DEF_MAX_REQ_PER_USER_MONTH as unknown as number) || 100,
     };
 
     return Promise.resolve(defaultUserDetails);
