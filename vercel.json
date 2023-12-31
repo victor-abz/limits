@@ -4,7 +4,6 @@
   "builds": [
     {
       "src": "dist/index.js",
-      "use": "20.5.1",
       "config": { "includeFiles": ["dist/**"] }
     }
   ],
