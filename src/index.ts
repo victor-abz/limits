@@ -36,12 +36,6 @@ app.use((req, res, next) => {
   rateLimiter.middleware(req, res, next);
 });
 
-app.get('/', async (req: Request, res: Response): Promise<Response> => {
-  return res.status(200).send({
-    message: 'Hello World!',
-  });
-});
-
 app.post('/send-notification', async (req: Request, res: Response): Promise<Response> => {
   console.log(req.body);
   // Handle Notification Handler
@@ -59,3 +53,5 @@ try {
 } catch (error: any) {
   console.error(`Error occured: ${error.message}`);
 }
+
+export default app;
