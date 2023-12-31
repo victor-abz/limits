@@ -2,19 +2,23 @@ import crypto from 'crypto';
 import { NextFunction, Request, Response } from 'express';
 import { StorageOptions } from './Storage/types/storage-options.types';
 
-export type RateLimiterConfigOptions = {
-  timeWindow: number | 'second' | 'sec' | 'minute' | 'min' | 'hour' | 'hr' | 'day';
+export interface UserDetails {
+  identifier: string;
   maxRequestsPerTimeWindow: number;
   maxRequestsPerUserPerMonth: number;
+}
+
+export type RateLimiterConfigOptions = {
+  timeWindow: number | 'second' | 'sec' | 'minute' | 'min' | 'hour' | 'hr' | 'day';
   maxRequestsAcrossSystem: number;
-  message?: string;
   storage: StorageOptions;
-  keyGenerator?: (req: Request, res: Response) => string;
+  message?: string;
+  keyGenerator?: (req: Request, res: Response) => Promise<UserDetails>;
 };
 
 export interface RateLimiterStrategy {
-  refillToken(identifier: string): Promise<void>;
-  consumeToken(identifier: string): Promise<boolean>;
+  refillToken(identifier: string, userDetails: UserDetails): Promise<void>;
+  consumeToken(identifier: string, userDetails: UserDetails): Promise<boolean>;
 }
 
 export class RateLimiter {
@@ -33,27 +37,40 @@ export class RateLimiter {
     return hash.digest('hex');
   }
 
-  async refillToken(identifier: string): Promise<void> {
-    return this.strategy.refillToken(identifier);
+  async refillToken(identifier: string, userDetails: UserDetails): Promise<void> {
+    return this.strategy.refillToken(identifier, userDetails);
   }
 
-  async consumeToken(identifier: string): Promise<boolean> {
-    return this.strategy.consumeToken(identifier);
+  async consumeToken(identifier: string, userDetails: UserDetails): Promise<boolean> {
+    return this.strategy.consumeToken(identifier, userDetails);
   }
 
   async middleware(req: Request, res: Response, next: NextFunction) {
-    const keyGenerator = this.config.keyGenerator || ((req) => req.ip);
-    const identifier = keyGenerator(req, res);
-    const hashedIdentifier = this.hashIdentifier(`${identifier}`);
+    // const keyGenerator = this.config.keyGenerator || ((req) => req.ip);
+    // const userDetails: userDetails = await keyGenerator(req, res);
+    const keyGenerator = this.config.keyGenerator || this.defaultKeyGenerator;
+    const userDetails: UserDetails = await keyGenerator(req, res);
 
-    await this.refillToken(`${hashedIdentifier}`);
+    const hashedIdentifier = await this.hashIdentifier(`${userDetails.identifier}`);
 
-    const consumeToken = await this.consumeToken(`${hashedIdentifier}`);
+    await this.refillToken(hashedIdentifier, userDetails);
+
+    const consumeToken = await this.consumeToken(hashedIdentifier, userDetails);
 
     if (consumeToken === true) {
       next();
     } else {
       return res.status(429).json({ status: 429, message: this.message });
     }
+  }
+
+  private defaultKeyGenerator(req: Request): Promise<UserDetails> {
+    const defaultUserDetails: UserDetails = {
+      identifier: req.ip!,
+      maxRequestsPerTimeWindow: 10,
+      maxRequestsPerUserPerMonth: 100,
+    };
+
+    return Promise.resolve(defaultUserDetails);
   }
 }

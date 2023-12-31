@@ -29,10 +29,8 @@ export class TokenBucket extends RateLimiter {
     }
 
     this.strategy = new TokenBucketStrategy(
-      this.config.maxRequestsPerTimeWindow,
       this.config.timeWindow as number,
       this.config.storage,
-      this.config.maxRequestsPerUserPerMonth,
       this.config.maxRequestsAcrossSystem,
     );
   }
