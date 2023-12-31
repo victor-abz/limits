@@ -36,6 +36,12 @@ app.use((req, res, next) => {
   rateLimiter.middleware(req, res, next);
 });
 
+app.get('/', async (req: Request, res: Response): Promise<Response> => {
+  return res.status(200).send({
+    message: 'Welcome to the Limiter!',
+  });
+});
+
 app.post('/send-notification', async (req: Request, res: Response): Promise<Response> => {
   console.log(req.body);
   // Handle Notification Handler
