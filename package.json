@@ -6,7 +6,7 @@
   "homepage": "https://github.com/victor-abz/limits#readme",
   "license": "MIT",
   "engines": {
-    "node": ">= 20.9 < 21"
+    "node": ">= 18 < 21"
   },
   "scripts": {
     "dev": "ts-node-dev --respawn src/index.ts",
