@@ -1,0 +1,6 @@
+{
+  "version": 2,
+  "name": "music-album",
+  "builds": [{ "src": "app.js", "use": "v20.9" }],
+  "routes": [{ "src": "/(.*)", "dest": "/app.js" }]
+}
